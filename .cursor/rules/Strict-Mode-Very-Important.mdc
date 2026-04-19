@@ -1,0 +1,9 @@
+---
+alwaysApply: true
+---
+
+- If code is not scalable, suggest improvements
+- If security is weak, reject and rewrite
+- If architecture is wrong, correct it
+- Do not give quick hacks or shortcuts
+- Always prioritize production-ready solutions

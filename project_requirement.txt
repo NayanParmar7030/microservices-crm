@@ -1,0 +1,473 @@
+Y# 1. 🧭 Vision & Scope
+
+## Vision
+
+Build a **multi-tenant, secure, scalable CRM + secure data platform** that allows businesses to:
+
+* Manage leads → deals → customers
+* Store and share sensitive credentials securely (Locker system)
+* Operate reliably at scale (10K–100K users)
+
+---
+
+## Scope (Phase-wise)
+
+### Phase 1 (MVP)
+
+* Auth + User
+* Lead management
+* Basic RBAC
+
+### Phase 2
+
+* Deals + Tasks
+* Locker system
+
+### Phase 3
+
+* Notifications + Queue
+* Redis caching
+
+### Phase 4
+
+* Microservices + Docker + Deployment
+
+---
+
+# 2. 🎯 Business Requirements
+
+* SaaS-based subscription model
+* Multi-tenant architecture
+* High availability (99.9% uptime)
+* Fast API response (<200ms)
+
+---
+
+# 3. 👤 User Roles & Permissions
+
+| Role    | Capabilities          |
+| ------- | --------------------- |
+| Admin   | Full control          |
+| Manager | Manage users, leads   |
+| User    | Operate assigned data |
+
+---
+
+# 4. 🧩 Functional Requirements (Deep + Real)
+
+---
+
+## 4.1 Authentication Service
+
+### Features:
+
+* Login / Register
+* JWT + Refresh Token
+* Logout (token invalidation)
+
+### Flows:
+
+1. User logs in
+2. Access token issued
+3. Refresh token stored securely
+
+### Edge Cases:
+
+* Token reuse attack
+* Multiple device sessions
+* Expired refresh token
+
+---
+
+## 4.2 User Service
+
+### Features:
+
+* CRUD users
+* Assign roles
+* Activity tracking
+
+### Constraints:
+
+* Unique email
+* Soft delete only
+
+---
+
+## 4.3 CRM Core Service
+
+### Modules:
+
+#### Leads
+
+* Create / update / assign
+* Status pipeline
+
+#### Deals
+
+* Pipeline stages
+* Revenue tracking
+
+#### Tasks
+
+* Assign + deadlines
+* Notifications
+
+---
+
+## 4.4 🔐 Locker Service (Critical Feature)
+
+### Core Logic:
+
+* Data encrypted before storage
+* Access is request-based
+
+### Flow:
+
+1. Admin stores secret
+2. User requests access
+3. Admin approves (time-limited)
+4. Access auto-revoked
+
+### Edge Cases:
+
+* Expiry not enforced → critical bug
+* Concurrent access requests
+* Unauthorized access attempts
+
+---
+
+## 4.5 Notification Service
+
+* Email queue
+* Event-driven triggers
+
+---
+
+# 5. 🏗️ System Architecture
+
+---
+
+## Architecture Style:
+
+* Microservices
+
+---
+
+## Services:
+
+* Auth Service
+* User Service
+* CRM Service
+* Locker Service
+* Notification Service
+
+---
+
+## Infra Components:
+
+* Cache → Redis
+* Containers → Docker
+* Proxy → Nginx
+
+---
+
+## Communication:
+
+* Sync → REST APIs
+* Async → Queue (BullMQ)
+
+---
+
+# 6. 🔌 API Contract Standards
+
+---
+
+## Rules:
+
+* `/api/v1/` prefix
+* JSON only
+* Idempotent where required
+
+---
+
+## Response Format:
+
+```json
+{
+  "success": true,
+  "data": {},
+  "message": ""
+}
+```
+
+---
+
+## Error Format:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Invalid token"
+  }
+}
+```
+
+---
+
+# 7. ⚡ Performance Requirements
+
+---
+
+## Targets:
+
+* <200ms API latency
+* <50ms DB queries
+
+---
+
+## Techniques:
+
+* Redis caching
+* Pagination
+* DB indexing
+* Compression
+
+---
+
+# 8. 🔐 Security Requirements (STRICT)
+
+---
+
+## Mandatory:
+
+* JWT authentication
+* bcrypt hashing
+* Input validation (Zod/Joi)
+* Rate limiting
+
+---
+
+## Advanced:
+
+* AES-256 encryption (Locker)
+* Secure headers
+* Audit logs
+
+---
+
+## Threat Protection:
+
+* SQL Injection
+* XSS
+* CSRF
+
+---
+
+# 9. 📦 Database Design
+
+---
+
+## PostgreSQL:
+
+* users
+* roles
+* permissions
+* leads
+* deals
+* tasks
+* locker_items
+
+---
+
+## MongoDB:
+
+* logs
+* events
+
+---
+
+## Rules:
+
+* Index frequently queried fields
+* Use transactions for critical operations
+
+---
+
+# 10. 🔄 Async Processing
+
+---
+
+## Queue System:
+
+* BullMQ (with Redis)
+
+---
+
+## Jobs:
+
+* Email sending
+* Notifications
+* Background tasks
+
+---
+
+# 11. 🐳 DevOps & Deployment
+
+---
+
+## Setup:
+
+* Docker for each service
+* Docker Compose (local)
+* CI/CD pipeline
+
+---
+
+## Environments:
+
+* Dev
+* Staging
+* Production
+
+---
+
+## Hosting:
+
+* AWS / DigitalOcean
+
+---
+
+# 12. 📊 Observability
+
+---
+
+## Logging:
+
+* Structured logs
+
+## Monitoring:
+
+* API latency
+* Errors
+* System health
+
+---
+
+# 13. 📈 Scalability Design
+
+---
+
+## Strategies:
+
+* Stateless services
+* Horizontal scaling
+* Load balancing
+
+---
+
+## Failure Handling:
+
+* Retry mechanism
+* Circuit breaker
+
+---
+
+# 14. 🧪 Testing Strategy
+
+---
+
+* Unit tests
+* Integration tests
+* Load testing
+
+---
+
+# 15. 📅 Delivery Plan
+
+---
+
+| Phase | Deliverable         |
+| ----- | ------------------- |
+| 1     | Auth + User         |
+| 2     | CRM Core            |
+| 3     | Locker              |
+| 4     | Redis + Queue       |
+| 5     | Docker + Deployment |
+
+---
+
+# 16. ⚠️ Risks & Mitigation
+
+| Risk            | Mitigation         |
+| --------------- | ------------------ |
+| Slow queries    | Indexing + caching |
+| Security breach | Encryption + audit |
+| Service failure | Retry + fallback   |
+
+---
+
+# 17. 🔄 Operational Requirements (THIS IS SENIOR LEVEL)
+
+---
+
+## Backup:
+
+* Daily DB backup
+
+## Recovery:
+
+* Restore within SLA
+
+## Deployment:
+
+* Zero downtime deployment
+
+## Rollback:
+
+* Versioned releases
+
+---
+
+# 18. 🧠 System Design Thinking (Critical)
+
+You must handle:
+
+* What if Redis crashes?
+  → Fallback to DB
+
+* What if service fails?
+  → Retry + circuit breaker
+
+* How to scale?
+  → Add instances via Docker
+
+---
+
+# 19. 🚀 Cursor AI Integration Rules
+
+---
+
+## Development Approach:
+
+* Use strict rules in Cursor
+* Generate only production-ready code
+* Enforce architecture automatically
+
+---
+
+# 20. 📊 Success Metrics
+
+---
+
+* 99.9% uptime
+* <200ms latency
+* Secure data handling
+* Scalable to 100K users
+
+---
+
+
+

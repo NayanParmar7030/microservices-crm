@@ -1,0 +1,11 @@
+---
+alwaysApply: true
+---
+
+- Always create Dockerfile for each service
+- Use docker-compose for local setup
+- Separate services:
+  - app
+  - redis
+  - postgres
+- Use environment variables for configs

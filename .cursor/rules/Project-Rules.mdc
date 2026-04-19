@@ -1,0 +1,62 @@
+---
+alwaysApply: true
+---
+
+Project: Webonify CRM (Microservices Architecture)
+
+Rules:
+
+1. Services:
+- Auth Service
+- User Service
+- CRM Service
+- Locker Service
+- Notification Service
+
+2. Each service must:
+- Be independent
+- Have its own database
+- Follow same folder structure
+
+3. Folder Structure:
+src/
+ ├── controllers/
+ ├── services/
+ ├── repositories/
+ ├── models/
+ ├── routes/
+ ├── middlewares/
+ ├── utils/
+ ├── config/
+
+4. API Rules:
+- Prefix: /api/v1/
+- Use JWT authentication middleware
+- Role-based access control required
+
+5. Locker System Rules:
+- Encrypt sensitive data before storing
+- Implement access request workflow
+- Add expiry-based access control
+
+6. Caching:
+- Use Redis for:
+  - API caching
+  - Sessions
+  - Rate limiting
+
+7. Queue:
+- Use BullMQ with Redis
+- Use for email & background jobs
+
+8. Database:
+- Use PostgreSQL for main data
+- Use MongoDB for logs
+
+9. Security:
+- Always validate input
+- Prevent SQL injection, XSS, CSRF
+
+10. Performance:
+- Use pagination for all list APIs
+- Add indexes for frequently queried fields
