@@ -4,9 +4,9 @@ import helmet from "helmet";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
 import pinoHttp from "pino-http";
-import { createProxyMiddleware } from "http-proxy-middleware";
 import type { Env } from "./config/env";
 import { logger } from "./utils/logger";
+import { createUpstreamProxy } from "./utils/upstreamProxy";
 
 export function createApp(env: Env) {
   const app = express();
@@ -29,31 +29,11 @@ export function createApp(env: Env) {
     res.json({ success: true, data: { service: "api-gateway" }, message: "ok" });
   });
 
-  const proxyCommon = { changeOrigin: true, xfwd: true } as const;
+  const timeoutMs = env.GATEWAY_PROXY_TIMEOUT_MS;
 
-  app.use(
-    "/api/v1/auth",
-    createProxyMiddleware({
-      target: env.AUTH_SERVICE_URL,
-      ...proxyCommon,
-    })
-  );
-
-  app.use(
-    "/api/v1/users",
-    createProxyMiddleware({
-      target: env.USER_SERVICE_URL,
-      ...proxyCommon,
-    })
-  );
-
-  app.use(
-    "/api/v1/crm",
-    createProxyMiddleware({
-      target: env.CRM_SERVICE_URL,
-      ...proxyCommon,
-    })
-  );
+  app.use("/api/v1/auth", createUpstreamProxy(env.AUTH_SERVICE_URL, timeoutMs));
+  app.use("/api/v1/users", createUpstreamProxy(env.USER_SERVICE_URL, timeoutMs));
+  app.use("/api/v1/crm", createUpstreamProxy(env.CRM_SERVICE_URL, timeoutMs));
 
   app.use((_req, res) => {
     res.status(404).json({

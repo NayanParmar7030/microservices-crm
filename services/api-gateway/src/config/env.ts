@@ -6,6 +6,7 @@ const envSchema = z.object({
   AUTH_SERVICE_URL: z.string().min(1),
   USER_SERVICE_URL: z.string().min(1),
   CRM_SERVICE_URL: z.string().min(1),
+  GATEWAY_PROXY_TIMEOUT_MS: z.coerce.number().min(1000).max(300_000).default(60_000),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -1,0 +1,16 @@
+node_modules
+**/node_modules
+dist
+**/dist
+.git
+.gitignore
+.env
+.env.*
+!.env.docker.example
+!.env.example
+.cursor
+coverage
+**/*.log
+logs
+**/logs
+*.md
