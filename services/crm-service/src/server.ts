@@ -6,6 +6,8 @@ import { runMigrations } from "./db/migrate";
 import { createAuthMiddleware } from "./middlewares/authMiddleware";
 import { LeadService } from "./services/leadService";
 import { LeadsController } from "./controllers/leadsController";
+import { TaskService } from "./services/taskService";
+import { TasksController } from "./controllers/tasksController";
 import { createApp } from "./app";
 import { logger } from "./utils/logger";
 
@@ -18,8 +20,10 @@ async function main() {
 
   const auth = createAuthMiddleware(env, redis);
   const leadService = new LeadService(pool);
-  const controller = new LeadsController(leadService);
-  const app = createApp(auth, controller);
+  const taskService = new TaskService(pool);
+  const leadsController = new LeadsController(leadService);
+  const tasksController = new TasksController(taskService);
+  const app = createApp(auth, leadsController, tasksController);
 
   const server = app.listen(env.PORT, () => {
     logger.info({ port: env.PORT }, "crm-service listening");

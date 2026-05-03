@@ -5,11 +5,17 @@ import compression from "compression";
 import rateLimit from "express-rate-limit";
 import pinoHttp from "pino-http";
 import type { LeadsController } from "./controllers/leadsController";
+import type { TasksController } from "./controllers/tasksController";
 import { buildLeadRouter } from "./routes/leadRoutes";
+import { buildTaskRouter } from "./routes/taskRoutes";
 import { errorHandler } from "./middlewares/errorHandler";
 import { logger } from "./utils/logger";
 
-export function createApp(auth: express.RequestHandler, controller: LeadsController) {
+export function createApp(
+  auth: express.RequestHandler,
+  leadsController: LeadsController,
+  tasksController: TasksController
+) {
   const app = express();
   app.disable("x-powered-by");
   app.use(helmet());
@@ -23,7 +29,8 @@ export function createApp(auth: express.RequestHandler, controller: LeadsControl
     res.json({ success: true, data: { service: "crm-service" }, message: "ok" });
   });
 
-  app.use("/api/v1/crm/leads", buildLeadRouter(auth, controller));
+  app.use("/api/v1/crm/leads", buildLeadRouter(auth, leadsController));
+  app.use("/api/v1/crm/tasks", buildTaskRouter(auth, tasksController));
 
   app.use(errorHandler);
   return app;

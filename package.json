@@ -2,14 +2,17 @@
   "name": "microservices-crm",
   "private": true,
   "workspaces": [
-    "services/*"
+    "services/*",
+    "frontend"
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
     "dev:auth": "npm run dev -w auth-service",
     "dev:user": "npm run dev -w user-service",
     "dev:crm": "npm run dev -w crm-service",
-    "dev:gateway": "npm run dev -w api-gateway"
+    "dev:notifications": "npm run dev -w notification-service",
+    "dev:gateway": "npm run dev -w api-gateway",
+    "dev:frontend": "npm run dev -w frontend"
   },
   "engines": {
     "node": ">=20"

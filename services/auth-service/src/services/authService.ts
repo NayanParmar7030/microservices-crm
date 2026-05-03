@@ -97,6 +97,7 @@ export class AuthService {
       userId,
       accessToken: pair.accessToken,
       refreshToken: pair.refreshToken,
+      refreshTtlSec: this.env.REFRESH_TOKEN_TTL_SEC,
     };
   }
 
@@ -137,11 +138,16 @@ export class AuthService {
       userId: row.id,
       accessToken: pair.accessToken,
       refreshToken: pair.refreshToken,
+      refreshTtlSec: this.env.REFRESH_TOKEN_TTL_SEC,
     };
   }
 
   async refresh(refreshToken: string) {
-    return this.tokens.rotateRefreshToken(refreshToken);
+    const rotated = await this.tokens.rotateRefreshToken(refreshToken);
+    return {
+      ...rotated,
+      refreshTtlSec: this.env.REFRESH_TOKEN_TTL_SEC,
+    };
   }
 
   async logout(input: { accessToken?: string; refreshToken?: string }) {

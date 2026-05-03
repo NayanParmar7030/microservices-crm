@@ -111,6 +111,28 @@ services:
     expose:
       - "3003"
 
+  notification-service:
+    build:
+      context: .
+      dockerfile: services/notification-service/Dockerfile
+    restart: unless-stopped
+    networks:
+      - backend
+    environment:
+      NODE_ENV: production
+      PORT: 3004
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/notification_db
+      REDIS_URL: redis://redis:6379
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    expose:
+      - "3004"
+
   api-gateway:
     build:
       context: .
@@ -127,10 +149,13 @@ services:
       AUTH_SERVICE_URL: http://auth-service:3001
       USER_SERVICE_URL: http://user-service:3002
       CRM_SERVICE_URL: http://crm-service:3003
+      NOTIFICATION_SERVICE_URL: http://notification-service:3004
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:5173}
     depends_on:
       - auth-service
       - user-service
       - crm-service
+      - notification-service
 
 volumes:
   postgres_data:
