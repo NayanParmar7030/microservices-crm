@@ -1,0 +1,91 @@
+---
+alwaysApply: true
+---
+
+---
+description: React component structure, hooks, and patterns
+globs: ["src/**/*.tsx"]
+alwaysApply: true
+---
+
+# React Component Standards
+
+## Component Structure
+Always use functional components with explicit TypeScript props:
+```tsx
+interface LeadCardProps {
+  lead: TLead
+  onEdit: (id: string) => void
+  className?: string
+}
+
+export function LeadCard({ lead, onEdit, className }: LeadCardProps) {
+  // hooks first
+  // derived state / handlers
+  // return JSX
+}
+```
+
+Rules:
+- Use `function` keyword for components (not `const` arrow)
+- Props interface directly above the component, named `<ComponentName>Props`
+- Named exports only (no default exports for components)
+- Call hooks at the top level — never inside conditionals or loops
+- Extract reusable logic into custom hooks (`useLeads`, `useLeadMutations`)
+
+## Hook Rules
+- All custom hooks prefixed with `use`
+- One responsibility per hook — don't combine unrelated concerns
+- Always clean up effects: return cleanup from `useEffect`
+- Use `useCallback` to stabilise handler references passed as props
+- Use `useMemo` only when computation is genuinely expensive (measure first)
+- Use `React.memo` for pure presentational components that receive stable props
+
+## State Management
+- **Local UI state** → `useState` / `useReducer`
+- **Server state** → TanStack Query (never `useState` + `useEffect` for API data)
+- **Global client state** (auth, sidebar, tenant) → Zustand store
+- Never store API response data in Zustand — that is Query's job
+
+## Code Splitting
+All feature pages must be lazy-loaded:
+```tsx
+const LeadsPage = lazy(() => import('@/pages/leads/LeadsPage'))
+
+// Wrap in Suspense with skeleton, never spinner
+<Suspense fallback={<PageSkeleton />}>
+  <LeadsPage />
+</Suspense>
+```
+
+## Conditional Rendering
+Use guard clauses and early returns:
+```tsx
+// ✅ correct
+if (isLoading) return <Skeleton />
+if (error) return <ErrorState error={error} />
+return <DataComponent data={data} />
+
+// ❌ avoid
+return isLoading ? <Spinner /> : error ? <Error /> : <Data />
+```
+
+## Accessibility
+- All interactive elements must have `aria-label` or visible label
+- Use semantic HTML (`<button>`, `<nav>`, `<main>`, `<section>`)
+- Never use `dangerouslySetInnerHTML` — sanitise with DOMPurify if rich text is needed
+- Form inputs must have associated `<label>` elements with `htmlFor`
+- Use `aria-required="true"` for required fields
+
+## Styling
+- Use Tailwind utility classes exclusively — no inline `style` props
+- Use `cn()` (clsx + tailwind-merge) for conditional class merging
+- Use `cva` (class-variance-authority) for component variants (shadcn/ui pattern)
+- CSS variable prefix: `--crm-*`
+
+## Avoid
+- `dangerouslySetInnerHTML`
+- Class components
+- Prop drilling beyond 2 levels — use composition or context
+- Anonymous arrow functions in JSX event handlers (extract with `useCallback`)
+- `useEffect` for data fetching — use React Query

@@ -1,0 +1,68 @@
+---
+alwaysApply: true
+---
+
+---
+description: TypeScript strict standards — applies to all .ts and .tsx files
+globs: ["src/**/*.ts", "src/**/*.tsx"]
+alwaysApply: true
+---
+
+# TypeScript Standards
+
+## Core Rules
+- `strict: true` is always enabled — no implicit `any`, strict null checks enforced
+- **Never use `as X` type assertions** except at API boundary with runtime Zod validation
+- **Never use `any`** — use `unknown` and narrow, or model the type properly
+- **Prefer `type` over `interface`** for object shapes; use `interface` only for extensible contracts
+- **No enums** — use `const` union types instead:
+  ```ts
+  // ✅ correct
+  type UserRole = 'admin' | 'manager' | 'user'
+  // ❌ never
+  enum UserRole { Admin, Manager, User }
+  ```
+- Use `readonly` for arrays and properties that should not be mutated
+- Use `import type` when an import is only used as a type
+- All API responses must be typed via Zod-validated interfaces — never assume response shape
+
+## Naming Conventions
+| Artifact | Convention | Example |
+|---|---|---|
+| React Components | PascalCase `.tsx` | `LeadKanban.tsx` |
+| Hooks | `use*` camelCase | `useLeadMutations.ts` |
+| API modules | `*.api.ts` | `crm.api.ts` |
+| Zustand stores | `*.store.ts` | `auth.store.ts` |
+| Zod schemas | `*.schema.ts` | `lead.schema.ts` |
+| Types/Interfaces | PascalCase with `T` prefix | `TLead`, `IApiResponse` |
+| Constants | SCREAMING_SNAKE_CASE | `MAX_PAGE_SIZE` |
+| Route paths | kebab-case | `/crm/leads/:leadId` |
+
+## Async State Typing
+Always use discriminated unions:
+```ts
+type AsyncState<T> =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'success'; data: T }
+  | { status: 'error'; error: string }
+```
+
+## API Response Typing
+```ts
+interface IApiResponse<T> {
+  success: boolean
+  data: T
+  message: string
+}
+
+interface IPaginatedResponse<T> extends IApiResponse<T[]> {
+  meta: { total: number; page: number; limit: number }
+}
+```
+
+## Function Signatures
+- Always type function parameters and return types explicitly
+- Use generics with constraints for reusable utilities
+- Prefer named exports over default exports for utilities and hooks
+- Use `function` keyword for React components (not arrow functions assigned to `const`)

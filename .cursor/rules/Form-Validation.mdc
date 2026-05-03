@@ -1,0 +1,67 @@
+---
+alwaysApply: true
+---
+
+---
+description: Forms with react-hook-form + Zod, and validation standards
+globs: ["src/features/**/components/**Form*.tsx", "src/features/**/schemas/**"]
+alwaysApply: false
+---
+
+# Forms & Validation Standards
+
+## Stack
+- **react-hook-form** for all forms — no uncontrolled inputs manually managed
+- **Zod** for schema validation — same schema shared between form and API call
+- **@hookform/resolvers/zod** as the resolver
+
+## Form Pattern
+```tsx
+// lead.schema.ts
+export const createLeadSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().email('Invalid email'),
+  status: z.enum(['new', 'contacted', 'qualified', 'won', 'lost']),
+  assignedTo: z.string().uuid().optional(),
+})
+export type TCreateLeadInput = z.infer<typeof createLeadSchema>
+
+// LeadForm.tsx
+export function LeadForm({ onSuccess }: LeadFormProps) {
+  const { mutate, isPending } = useCreateLead()
+  const form = useForm<TCreateLeadInput>({
+    resolver: zodResolver(createLeadSchema),
+    defaultValues: { status: 'new' },
+  })
+
+  function handleSubmit(data: TCreateLeadInput) {
+    mutate(data, { onSuccess })
+  }
+
+  return (
+    <form onSubmit={form.handleSubmit(handleSubmit)}>
+      <FormField
+        control={form.control}
+        name="name"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Name *</FormLabel>
+            <FormControl><Input {...field} /></FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <Button type="submit" loading={isPending}>Save</Button>
+    </form>
+  )
+}
+```
+
+## Rules
+- Validate on blur for individual fields; full summary on submit attempt
+- Mark required fields with `*` in label AND `aria-required="true"` on input
+- Disable submit button during mutation (`isPending`); show spinner state
+- On success: toast notification + `queryClient.invalidateQueries`
+- On error: map API validation errors back to form fields via `form.setError`
+- Never reset form manually — use `form.reset()` after successful mutation
+- Use `Controller` / `FormField` for custom inputs (Select, DatePicker, etc.)

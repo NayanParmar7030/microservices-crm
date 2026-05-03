@@ -1,0 +1,65 @@
+---
+alwaysApply: true
+---
+
+---
+description: Performance optimisation — code splitting, memoisation, bundle
+globs: ["src/**/*.tsx", "vite.config.ts"]
+alwaysApply: false
+---
+
+# Performance Optimisation
+
+## Core Web Vitals Budgets (enforced by Lighthouse CI)
+| Metric | Target |
+|---|---|
+| LCP | < 2.5s |
+| FID | < 100ms |
+| CLS | < 0.1 |
+| Initial bundle (gzipped) | < 200KB |
+| React Query cache hit rate | > 60% |
+
+## Code Splitting — Required for All Feature Pages
+```tsx
+// pages/leads/index.ts — always lazy
+const LeadsPage = lazy(() => import('@/pages/leads/LeadsPage'))
+// Wrap with skeleton fallback, never a generic spinner
+<Suspense fallback={<PageSkeleton />}><LeadsPage /></Suspense>
+```
+
+## Vite Manual Chunks (keep in sync with vite.config.ts)
+```ts
+manualChunks: {
+  vendor:  ['react', 'react-dom'],
+  query:   ['@tanstack/react-query'],
+  charts:  ['recharts', '@tremor/react'],
+  crypto:  ['crypto-js'],
+}
+```
+
+## Memoisation Rules
+- `React.memo` — wrap pure presentational components that receive stable props
+- `useCallback` — stabilise callbacks passed to child components or `useEffect` deps
+- `useMemo` — only for genuinely expensive computation; add a comment explaining why
+- Measure before optimising — don't add `memo` everywhere speculatively
+
+## Virtual Lists
+- Use `@tanstack/virtual` for any list or table rendering > 100 items
+- Never render all rows in a DataTable — always paginate or virtualise
+
+## Search/Filter Inputs
+- Debounce all search/filter inputs by **300ms** before triggering API calls
+- Use `useDeferredValue` for local filter operations on large datasets
+
+## Images
+- Always set `loading="lazy"` and explicit `width` + `height` to prevent CLS
+- Prefer WebP; use `srcset` for responsive images
+
+## Skeleton Screens
+- Use skeleton screens that **match the exact layout** of the loaded content
+- Never use a generic full-page spinner — it causes layout shift on resolution
+
+## Pagination
+- Default page size: **25 rows**
+- Offer selector: 10 / 25 / 50 / 100
+- Use cursor-based pagination where the API supports it (better for large datasets)

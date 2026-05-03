@@ -1,0 +1,70 @@
+---
+alwaysApply: true
+---
+
+---
+description: Testing standards — Vitest, RTL, MSW, Playwright
+globs: ["src/**/*.test.ts", "src/**/*.test.tsx", "src/**/*.spec.ts", "e2e/**"]
+alwaysApply: false
+---
+
+# Testing Standards
+
+## Coverage Requirements
+| Module | Minimum |
+|---|---|
+| Auth flows (token refresh edge cases) | 95% |
+| Locker encrypt/decrypt utilities | **100%** |
+| Form validations (all Zod branches) | 90% |
+| API hooks (loading/error/success states) | 80% |
+| UI components (interaction states) | 70% |
+| Overall | > 80% lines/branches |
+
+## Testing Layers
+| Layer | Tool | What to test |
+|---|---|---|
+| Unit | Vitest | Custom hooks, utility functions, Zod schemas |
+| Component | RTL + MSW | Forms, tables, modals — query by role/label |
+| Integration | RTL + MSW | Feature flows: create lead, approve locker access |
+| E2E | Playwright | Login, lead CRUD, deal pipeline, locker access |
+
+## RTL Rules
+- Query by **role or label** — never by `data-testid` unless no semantic alternative
+- Test user behaviour, not implementation details
+- Use MSW handlers to mock all API calls — no `jest.mock` on modules
+- Always test loading state, error state, and success state
+- Use `userEvent` (not `fireEvent`) for realistic interactions
+
+## MSW Pattern
+```ts
+// mocks/handlers/leads.handlers.ts
+export const leadHandlers = [
+  http.get('/api/v1/leads', ({ request }) => {
+    const url = new URL(request.url)
+    const page = Number(url.searchParams.get('page') ?? 1)
+    return HttpResponse.json({
+      success: true,
+      data: mockLeads.slice((page - 1) * 25, page * 25),
+      message: 'OK',
+    })
+  }),
+  http.post('/api/v1/leads', async ({ request }) => {
+    const body = await request.json()
+    return HttpResponse.json(
+      { success: true, data: { id: 'mock-id', ...body }, message: 'Created' },
+      { status: 201 }
+    )
+  }),
+]
+```
+
+## Test File Naming
+- Co-located with component: `LeadCard.test.tsx` next to `LeadCard.tsx`
+- Hook tests: `useLeads.test.ts`
+- E2E in `e2e/` folder: `lead-crud.spec.ts`
+
+## Test Writing Rules
+- Describe blocks: `describe('LeadCard', () => { ... })`
+- Test names: complete sentence from user perspective — `it('shows an error when the API returns 422')`
+- One assertion concept per `it` block (multiple `expect` calls are fine if they test the same scenario)
+- Always `await` user interactions: `await userEvent.click(button)`

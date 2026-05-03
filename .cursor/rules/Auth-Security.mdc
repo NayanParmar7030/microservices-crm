@@ -1,0 +1,55 @@
+---
+alwaysApply: true
+---
+
+---
+description: Authentication, JWT strategy, RBAC guards, and security rules
+globs: ["src/features/auth/**", "src/store/auth.store.ts", "src/components/layout/**"]
+alwaysApply: false
+---
+
+# Auth, Security & RBAC
+
+## JWT Token Strategy
+| Token | Storage | TTL |
+|---|---|---|
+| Access Token | **In-memory only** (Zustand) — lost on refresh, that's intentional | 15 min |
+| Refresh Token | httpOnly cookie (backend sets it) — never accessible in JS | 7 days |
+| Silent Refresh | On app mount: `POST /auth/refresh` → store new access token before render | — |
+
+**NEVER store access tokens in localStorage or sessionStorage.**
+
+## ProtectedRoute Pattern
+```tsx
+function ProtectedRoute({ roles }: { roles?: TUserRole[] }) {
+  const { user, isAuthenticated } = useAuthStore()
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+  if (roles && !roles.includes(user.role))
+    return <Navigate to="/403" replace />
+  return <Outlet />
+}
+```
+
+## RBAC Role Matrix
+| Role | Access |
+|---|---|
+| `admin` | All routes + `/settings/users` + `/settings/roles` + `/locker` (full) |
+| `manager` | `/dashboard`, `/crm/*`, `/locker` (request only), `/notifications` |
+| `user` | `/dashboard`, assigned leads/deals/tasks only, `/notifications` |
+
+## Security Checklist (enforce in code review)
+- ❌ Never use `dangerouslySetInnerHTML` — use DOMPurify for rich text
+- ❌ Never log tokens, passwords, or locker values in console (strip in prod via Vite define)
+- ❌ Never store sensitive values in URL params or query strings
+- ✅ Access token in `Authorization: Bearer <token>` header (not cookie) — defeats CSRF
+- ✅ Refresh cookie must be `SameSite=Strict` (backend concern — verify)
+- ✅ Validate all redirect params against an allowlist before navigation
+- ✅ Run `npm audit` in CI — block deploys on high-severity vulnerabilities
+- ✅ CSP headers set via Nginx — restrict script/style sources
+
+## Locker Module Security (critical)
+- Encryption/decryption happens **client-side with AES-256** (crypto-js)
+- Decrypted values must live **only in local component state** — never in Zustand, React Query cache, or localStorage
+- Auto-clear decrypted value on component unmount or route leave
+- Never send plaintext credentials over the network
+- Locker encrypt/decrypt utilities must have **100% test coverage**

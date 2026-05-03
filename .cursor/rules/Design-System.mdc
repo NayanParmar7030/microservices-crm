@@ -1,0 +1,63 @@
+---
+alwaysApply: true
+---
+
+---
+description: Design system — color tokens, typography, component variants
+globs: ["src/components/**", "src/features/**/components/**"]
+alwaysApply: false
+---
+
+# Design System
+
+## Color Tokens (use CSS variables, never raw hex in components)
+| Variable | Value | Usage |
+|---|---|---|
+| `--crm-primary` | `#0F172A` Navy | Sidebar bg, heavy text, CTAs |
+| `--crm-accent` | `#6366F1` Indigo | Primary buttons, active states, links |
+| `--crm-accent-hover` | `#4F46E5` | Button hover |
+| `--crm-surface` | `#FFFFFF` | Card & panel backgrounds |
+| `--crm-bg` | `#F8FAFC` Gray 50 | App background |
+| `--crm-border` | `#E2E8F0` Gray 200 | Dividers, input borders |
+| `--crm-success` | `#059669` Green | Won, Active |
+| `--crm-warning` | `#D97706` Amber | In Progress, Pending |
+| `--crm-error` | `#DC2626` Red | Lost, Error states |
+| `--crm-text-primary` | `#0F172A` | Body headings |
+| `--crm-text-muted` | `#475569` Gray 600 | Secondary text, labels |
+
+## Spacing
+- Base unit: 4px (Tailwind default). Use multiples: 4, 8, 12, 16, 24, 32, 48, 64
+- Sidebar: 256px (collapsed: 64px) | TopNav: 56px
+- Content max-width: 1280px, horizontal padding 24px
+- Card padding: 24px | Section gap: 24px | Inline gap: 8–12px
+
+## Button Variants (cva pattern)
+| Variant | Usage |
+|---|---|
+| `default` | Filled indigo — primary actions (Save, Create, Submit) |
+| `secondary` | Outlined — secondary actions (Cancel, Back) |
+| `ghost` | No border — tertiary actions (Edit icon, kebab menu) |
+| `destructive` | Red fill — destructive confirms (Delete, Revoke) |
+| `loading` | Spinner + disabled — during inflight mutation |
+
+## Status Badges
+| Status | Color |
+|---|---|
+| New | Gray |
+| Contacted | Blue |
+| Qualified | Indigo |
+| Won / Active | Green (`--crm-success`) |
+| Lost / Error | Red (`--crm-error`) |
+| In Progress / Pending | Amber (`--crm-warning`) |
+
+## Responsive Breakpoints (test at all three)
+- Mobile: 375px
+- Tablet: 768px  
+- Desktop: 1280px
+
+## Component Standards
+- All modals/sheets use shadcn Sheet (slide-over) for create/edit flows
+- DataTable: always use `@tanstack/react-table` — never a custom table
+- Toast: `react-hot-toast` — success on mutation, error on failure
+- Empty state: use shared `EmptyState` component with contextual CTA
+- Loading rows: **skeleton rows** (not a spinner) to prevent layout shift

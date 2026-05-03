@@ -1,0 +1,54 @@
+---
+alwaysApply: true
+---
+
+---
+description: CRM Platform — Project context, stack, and architecture overview
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# CRM Platform — Project Context
+
+You are a senior full-stack engineer working on a **production-grade, multi-tenant SaaS CRM** built with:
+
+**Frontend:** React 18 + TypeScript 5 (strict) + Vite 5  
+**UI:** Tailwind CSS 3 + shadcn/ui + Radix UI primitives  
+**State:** Zustand (client) + TanStack Query v5 (server state)  
+**Forms:** react-hook-form + Zod resolvers  
+**Routing:** TanStack Router v1 (type-safe, file-based)  
+**Charts:** Recharts + Tremor  
+**HTTP:** Axios with JWT refresh interceptor  
+**Testing:** Vitest + React Testing Library + MSW + Playwright  
+**Build:** Vite with manual chunk splitting  
+
+**Backend microservices (Node.js REST):** Auth · Users · CRM Core · Locker · Notifications  
+All backend responses follow: `{ success: boolean, data: T, message: string }`
+
+## Architecture Principles
+- Feature-sliced folder structure under `src/features/<domain>/`
+- Each feature exports a barrel `index.ts` as its public API
+- API hooks live in `src/api/<service>.api.ts` as TanStack Query wrappers
+- Zustand stores: `auth.store.ts`, `ui.store.ts`, `tenant.store.ts`
+- All routes are protected by `ProtectedRoute` with RBAC role checks
+- Multi-tenant: every API call must include `tenantId` in the React Query key
+- Access token: in-memory (Zustand) only — NEVER localStorage
+- Refresh token: httpOnly cookie, auto-refreshed via Axios interceptor
+
+## Folder Structure
+```
+src/
+├── api/           # Axios + React Query hooks per service
+├── components/
+│   ├── ui/        # shadcn/ui re-exports & custom primitives
+│   ├── layout/    # AppShell, Sidebar, TopNav, Breadcrumb
+│   └── shared/    # DataTable, Modal, EmptyState, PageHeader
+├── features/      # Feature-sliced domain modules
+│   ├── auth/ · users/ · leads/ · deals/ · tasks/ · locker/ · notifications/
+├── hooks/         # Shared custom hooks
+├── lib/           # axios config, query client, zod schemas
+├── pages/         # Route entry points (thin — compose features)
+├── store/         # Zustand stores
+├── types/         # Global TypeScript interfaces & enums
+└── utils/         # Pure helpers (format, cn, crypto)
+```

@@ -1,0 +1,56 @@
+---
+alwaysApply: true
+---
+
+---
+description: Git commit conventions and CI/CD pipeline rules
+globs: ["**/*"]
+alwaysApply: false
+---
+
+# Git & CI/CD Standards
+
+## Commit Message Format (Conventional Commits)
+```
+<type>(<scope>): <short description>
+
+[optional body — explain WHY, not WHAT]
+
+[optional footer: BREAKING CHANGE or issue refs]
+```
+
+Types: `feat` · `fix` · `chore` · `refactor` · `test` · `docs` · `perf` · `ci`  
+Scope examples: `leads` · `auth` · `locker` · `ui` · `api`
+
+Examples:
+```
+feat(leads): add CSV bulk import with preview table
+fix(auth): queue concurrent requests during token refresh
+perf(deals): virtualise pipeline kanban for large datasets
+test(locker): achieve 100% coverage on encrypt/decrypt utils
+```
+
+## Branch Naming
+- `feat/<ticket>-short-description`
+- `fix/<ticket>-short-description`
+- `chore/<description>`
+
+## PR Rules
+- Every PR must pass: `lint → typecheck → test:ci → build`
+- Lighthouse CI budget must not regress
+- No PR merged with TypeScript errors or ESLint warnings
+- Test coverage must not drop below thresholds
+
+## CI Pipeline Steps
+1. `npm ci`
+2. `npm run lint` (ESLint + TypeScript check)
+3. `npm run test:ci` (Vitest --coverage)
+4. `npm run build` (Vite production build)
+5. `npx lighthouse-ci` (Core Web Vitals budget)
+6. Docker build + push (on main only)
+7. Deploy to staging → smoke test → promote to prod
+
+## Package Management
+- Use `npm` (matches `package-lock.json` in repo)
+- Never commit `node_modules`
+- Run `npm audit` before merging — block on high/critical severity

@@ -1,0 +1,93 @@
+---
+alwaysApply: true
+---
+
+---
+description: API hooks, React Query, and Axios patterns
+globs: ["src/api/**", "src/features/**/hooks/**"]
+alwaysApply: false
+---
+
+# Data Fetching & API Layer
+
+## React Query — Golden Rules
+- **Never use `useEffect` + `useState` for API calls** — always use TanStack Query
+- Query keys must be arrays and always include `tenantId` for multi-tenant isolation:
+  ```ts
+  queryKey: ['leads', tenantId, { page, status, assignedTo }]
+  ```
+- Use `select` to transform/derive data inside the hook — not in the component
+- Invalidate related queries after mutations (`queryClient.invalidateQueries`)
+- Use optimistic updates for actions that should feel instant (status change, create)
+
+## Query Client Config (do not change without discussion)
+```ts
+new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,       // 5 min
+      gcTime: 10 * 60 * 1000,          // 10 min
+      retry: 2,
+      refetchOnWindowFocus: false,
+    }
+  }
+})
+```
+
+## API Hook Pattern
+```ts
+// src/api/crm.api.ts
+export function useLeads(params: TLeadListParams) {
+  const { tenantId } = useAuthStore()
+  return useQuery({
+    queryKey: ['leads', tenantId, params],
+    queryFn: () => api.get<IPaginatedResponse<TLead>>('/crm/leads', { params }),
+    select: (res) => res.data,
+  })
+}
+
+export function useCreateLead() {
+  const qc = useQueryClient()
+  const { tenantId } = useAuthStore()
+  return useMutation({
+    mutationFn: (data: TCreateLeadInput) =>
+      api.post<IApiResponse<TLead>>('/crm/leads', data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['leads', tenantId] })
+      toast.success('Lead created')
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  })
+}
+```
+
+## Axios Instance
+- Single Axios instance in `src/lib/axios.ts`
+- JWT access token injected via request interceptor from Zustand `auth.store`
+- 401 response: trigger silent refresh → retry original request → if refresh fails, clear auth + redirect `/login`
+- Queue concurrent requests during token refresh (mutex pattern)
+
+## HTTP Status Handling
+| Status | Action |
+|---|---|
+| 200 OK | Parse data, update cache |
+| 201 Created | Invalidate list query, success toast |
+| 400 Bad Request | Map `error.fields` → `react-hook-form` `setError` |
+| 401 Unauthorized | Trigger token refresh; if fails → logout |
+| 403 Forbidden | Show 403 inline banner or page |
+| 404 Not Found | Show 404 component, log to Sentry |
+| 409 Conflict | Inline error message |
+| 422 Unprocessable | Map validation errors → form field errors |
+| 429 Too Many Requests | Toast with retry countdown |
+| 500 Server Error | Generic toast + Sentry report |
+
+## Error Utility
+```ts
+// utils/api-error.ts
+export function getApiError(err: unknown): string {
+  if (axios.isAxiosError(err)) {
+    return err.response?.data?.message ?? 'Something went wrong'
+  }
+  return 'Unexpected error'
+}
+```
