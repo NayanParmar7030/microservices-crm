@@ -9,7 +9,7 @@ export function setRefreshCookie(
 ) {
   res.cookie(REFRESH_COOKIE_NAME, refreshToken, {
     httpOnly: true,
-    sameSite: "strict",
+    sameSite: "lax",
     secure: options.secure,
     path: "/api/v1/auth",
     maxAge: options.maxAgeSec * 1000,
@@ -19,7 +19,7 @@ export function setRefreshCookie(
 export function clearRefreshCookie(res: Response) {
   res.clearCookie(REFRESH_COOKIE_NAME, {
     httpOnly: true,
-    sameSite: "strict",
+    sameSite: "lax",
     path: "/api/v1/auth",
   });
 }
