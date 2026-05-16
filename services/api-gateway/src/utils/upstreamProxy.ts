@@ -8,7 +8,7 @@ import { logger } from "./logger";
 const httpAgent = new HttpAgent({ keepAlive: true, maxSockets: 100 });
 const httpsAgent = new HttpsAgent({ keepAlive: true, maxSockets: 100 });
 
-export function createUpstreamProxy(target: string, timeoutMs: number): RequestHandler {
+export function createUpstreamProxy(target: string, timeoutMs: number, pathRewrite?: Record<string, string>): RequestHandler {
   const agent = target.startsWith("https://") ? httpsAgent : httpAgent;
 
   return createProxyMiddleware({
@@ -18,6 +18,7 @@ export function createUpstreamProxy(target: string, timeoutMs: number): RequestH
     timeout: timeoutMs,
     proxyTimeout: timeoutMs,
     agent,
+    pathRewrite,
     on: {
       error(err, _req, res) {
         logger.error({ err, target }, "upstream proxy error");

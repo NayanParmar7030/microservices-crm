@@ -1,4 +1,7 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+import path from "path";
+// Load .env from the service root (one level up from src/)
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 import { loadEnv } from "./config/env";
 import { createApp } from "./app";
 import { logger } from "./utils/logger";

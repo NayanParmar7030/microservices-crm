@@ -24,7 +24,6 @@ export function createApp(env: Env) {
     })
   );
   app.use(compression());
-  app.use(express.json({ limit: "1mb" }));
   app.use(
     rateLimit({
       windowMs: 60_000,
@@ -41,10 +40,12 @@ export function createApp(env: Env) {
 
   const timeoutMs = env.GATEWAY_PROXY_TIMEOUT_MS;
 
-  app.use("/api/v1/auth", createUpstreamProxy(env.AUTH_SERVICE_URL, timeoutMs));
-  app.use("/api/v1/users", createUpstreamProxy(env.USER_SERVICE_URL, timeoutMs));
-  app.use("/api/v1/crm", createUpstreamProxy(env.CRM_SERVICE_URL, timeoutMs));
-  app.use("/api/v1/notifications", createUpstreamProxy(env.NOTIFICATION_SERVICE_URL, timeoutMs));
+  // Express strips the mount prefix before http-proxy-middleware sees the path.
+  // e.g. mount at /api/v1/auth → proxy sees /register → rewrite to /api/v1/auth/register
+  app.use("/api/v1/auth", createUpstreamProxy(env.AUTH_SERVICE_URL, timeoutMs, { "^/": "/api/v1/auth/" }));
+  app.use("/api/v1/users", createUpstreamProxy(env.USER_SERVICE_URL, timeoutMs, { "^/": "/api/v1/users/" }));
+  app.use("/api/v1/crm", createUpstreamProxy(env.CRM_SERVICE_URL, timeoutMs, { "^/": "/api/v1/crm/" }));
+  app.use("/api/v1/notifications", createUpstreamProxy(env.NOTIFICATION_SERVICE_URL, timeoutMs, { "^/": "/api/v1/notifications/" }));
 
   app.use((_req, res) => {
     res.status(404).json({

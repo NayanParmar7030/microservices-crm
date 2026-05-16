@@ -1,4 +1,7 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+import path from "path";
+// Load .env from the service root (one level up from src/)
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 import Redis from "ioredis";
 import { loadEnv } from "./config/env";
 import { createPool } from "./db/pool";

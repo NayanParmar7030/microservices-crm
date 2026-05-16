@@ -47,6 +47,10 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const original = error.config as { _retry?: boolean } & typeof error.config;
+    // Never retry refresh calls — avoids infinite loop when session is absent
+    if (original?.url?.includes("/auth/refresh")) {
+      return Promise.reject(error);
+    }
     if (error.response?.status === 401 && original && !original._retry) {
       original._retry = true;
       const token = await refreshAccessToken();

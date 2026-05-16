@@ -88,6 +88,10 @@ function ForbiddenRouteComponent() {
 
 function LoginRouteComponent() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isBootstrapped = useAuthStore((state) => state.isBootstrapped);
+  if (!isBootstrapped) {
+    return <PageSkeleton />;
+  }
   if (isAuthenticated) {
     return <Navigate to="/tasks" />;
   }
@@ -100,6 +104,10 @@ function LoginRouteComponent() {
 
 function RegisterRouteComponent() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isBootstrapped = useAuthStore((state) => state.isBootstrapped);
+  if (!isBootstrapped) {
+    return <PageSkeleton />;
+  }
   if (isAuthenticated) {
     return <Navigate to="/tasks" />;
   }
