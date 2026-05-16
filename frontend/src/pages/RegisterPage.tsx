@@ -1,94 +1,96 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { register } from "../api/auth.api";
-import { Button } from "../components/ui/Button";
-import { Card } from "../components/ui/Card";
-import { Input } from "../components/ui/Input";
 import { applyAuthPayload } from "../lib/session";
 
 export function RegisterPage() {
   const navigate = useNavigate();
   const [form, setForm] = useState({
-    organizationName: "",
-    firstName: "",
-    lastName: "",
-    email: "",
-    password: "",
+    organizationName: "", firstName: "", lastName: "", email: "", password: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function set(field: keyof typeof form) {
+    return (e: React.ChangeEvent<HTMLInputElement>) =>
+      setForm((prev) => ({ ...prev, [field]: e.target.value }));
+  }
+
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     setSubmitting(true);
     setError(null);
     try {
       const payload = await register(form);
       applyAuthPayload(payload);
       await navigate({ to: "/tasks" });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Registration failed");
+    } catch {
+      setError("Registration failed. Email may already be in use.");
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <section className="mx-auto mt-12 max-w-md">
-      <Card>
-        <h2 className="text-xl font-semibold text-slate-900">Create account</h2>
-        <p className="mt-1 text-sm text-slate-500">Provision tenant and admin user in one step.</p>
-        <form className="mt-4 space-y-3" onSubmit={onSubmit}>
-          <Input
-            className="w-full"
-            placeholder="Organization name"
-            required
-            value={form.organizationName}
-            onChange={(event) => setForm((prev) => ({ ...prev, organizationName: event.target.value }))}
-          />
-          <div className="grid grid-cols-2 gap-2">
-            <Input
-              placeholder="First name"
+    <div className="auth-page">
+      <div className="auth-card">
+        <div className="auth-logo">⚡ CRM<span>Pro</span></div>
+        <h1 className="auth-title">Create your workspace</h1>
+        <p className="auth-subtitle">Set up your organization in seconds</p>
+
+        <form className="auth-form" onSubmit={onSubmit}>
+          <div className="form-group">
+            <label className="form-label">Organization name</label>
+            <input
+              className="form-input"
               required
-              value={form.firstName}
-              onChange={(event) => setForm((prev) => ({ ...prev, firstName: event.target.value }))}
-            />
-            <Input
-              placeholder="Last name"
-              required
-              value={form.lastName}
-              onChange={(event) => setForm((prev) => ({ ...prev, lastName: event.target.value }))}
+              placeholder="Acme Inc."
+              value={form.organizationName}
+              onChange={set("organizationName")}
             />
           </div>
-          <Input
-            className="w-full"
-            type="email"
-            placeholder="Email"
-            required
-            value={form.email}
-            onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
-          />
-          <Input
-            className="w-full"
-            type="password"
-            placeholder="Password"
-            required
-            minLength={8}
-            value={form.password}
-            onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
-          />
-          {error ? <p className="text-sm text-red-600">{error}</p> : null}
-          <Button className="w-full" type="submit" disabled={submitting}>
-            {submitting ? "Creating..." : "Create account"}
-          </Button>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="form-group">
+              <label className="form-label">First name</label>
+              <input className="form-input" required placeholder="John" value={form.firstName} onChange={set("firstName")} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Last name</label>
+              <input className="form-input" required placeholder="Doe" value={form.lastName} onChange={set("lastName")} />
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Work email</label>
+            <input className="form-input" type="email" required placeholder="you@company.com" value={form.email} onChange={set("email")} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Password</label>
+            <input className="form-input" type="password" required minLength={8} placeholder="Min. 8 characters" value={form.password} onChange={set("password")} />
+          </div>
+
+          {error && (
+            <div style={{
+              background: "#fef2f2", border: "1px solid #fecaca",
+              borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#dc2626"
+            }}>
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={submitting}
+            style={{ width: "100%", height: 42, fontSize: 14, marginTop: 4 }}
+          >
+            {submitting ? "Creating workspace..." : "Create account"}
+          </button>
         </form>
-        <p className="mt-3 text-sm text-slate-600">
-          Already have an account?{" "}
-          <Link className="font-medium text-indigo-600 hover:text-indigo-700" to="/login">
-            Sign in
-          </Link>
-        </p>
-      </Card>
-    </section>
+
+        <div className="auth-divider">
+          Already have an account? <Link to="/login">Sign in</Link>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -1,243 +1,191 @@
 import { useState } from "react";
 import { useCreateLead, useDeleteLead, useLeads, useUpdateLead } from "../api/leads.api";
-import { Button } from "../components/ui/Button";
-import { Card } from "../components/ui/Card";
-import { Input } from "../components/ui/Input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeaderCell,
-  TableRow,
-} from "../components/ui/Table";
 import type { TLead } from "../types/api";
 
-const STATUS_LABELS: Record<TLead["status"], string> = {
-  new: "New",
-  contacted: "Contacted",
-  qualified: "Qualified",
-  won: "Won",
-  lost: "Lost",
+const STATUS_BADGE: Record<TLead["status"], string> = {
+  new: "badge badge-blue",
+  contacted: "badge badge-yellow",
+  qualified: "badge badge-purple",
+  won: "badge badge-green",
+  lost: "badge badge-red",
+};
+const STATUS_LABEL: Record<TLead["status"], string> = {
+  new: "New", contacted: "Contacted", qualified: "Qualified", won: "Won", lost: "Lost",
 };
 
-const STATUS_COLORS: Record<TLead["status"], string> = {
-  new: "bg-blue-100 text-blue-700",
-  contacted: "bg-yellow-100 text-yellow-700",
-  qualified: "bg-purple-100 text-purple-700",
-  won: "bg-green-100 text-green-700",
-  lost: "bg-red-100 text-red-700",
-};
-
-type TEditState = {
-  id: string;
-  title: string;
-  description: string;
-  status: TLead["status"];
-} | null;
+type TEditState = { id: string; title: string; description: string; status: TLead["status"]; } | null;
 
 export function LeadsPage() {
-  const [page] = useState(1);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<TLead["status"]>("new");
+  const [filterStatus, setFilterStatus] = useState<TLead["status"] | "">("");
   const [editState, setEditState] = useState<TEditState>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
 
-  const { data, isLoading, isError, error } = useLeads({ page, limit: 25 });
+  const { data, isLoading, isError } = useLeads({ page: 1, limit: 50 });
   const createLead = useCreateLead();
   const updateLead = useUpdateLead();
   const deleteLead = useDeleteLead();
 
+  const filtered = filterStatus
+    ? (data?.items ?? []).filter((l) => l.status === filterStatus)
+    : (data?.items ?? []);
+
+  const counts = (data?.items ?? []).reduce((acc, l) => {
+    acc[l.status] = (acc[l.status] ?? 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
   async function onCreateLead() {
     if (!title.trim()) return;
-    await createLead.mutateAsync({
-      title: title.trim(),
-      description: description.trim() || null,
-      status,
-    });
-    setTitle("");
-    setDescription("");
-    setStatus("new");
+    await createLead.mutateAsync({ title: title.trim(), description: description.trim() || null, status });
+    setTitle(""); setDescription(""); setStatus("new"); setShowCreate(false);
   }
 
   async function onSaveEdit() {
-    if (!editState || !editState.title.trim()) return;
-    await updateLead.mutateAsync({
-      id: editState.id,
-      title: editState.title.trim(),
-      description: editState.description.trim() || null,
-      status: editState.status,
-    });
+    if (!editState?.title.trim()) return;
+    await updateLead.mutateAsync({ id: editState.id, title: editState.title.trim(), description: editState.description.trim() || null, status: editState.status });
     setEditState(null);
   }
 
-  async function onDelete(id: string) {
-    await deleteLead.mutateAsync(id);
-    setDeleteConfirmId(null);
-  }
-
   return (
-    <section className="grid gap-4">
-      {/* Header */}
-      <Card>
-        <h2 className="text-xl font-semibold text-slate-900">Leads</h2>
-        <p className="text-sm text-slate-500">Manage your sales pipeline leads.</p>
-      </Card>
-
-      {/* Create lead */}
-      <Card>
-        <h3 className="mb-3 text-base font-semibold text-slate-900">Add Lead</h3>
-        <div className="flex flex-wrap gap-2">
-          <Input
-            className="min-w-48"
-            placeholder="Lead title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-          <Input
-            className="min-w-64"
-            placeholder="Description (optional)"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-          <select
-            className="crm-input"
-            aria-label="Status"
-            value={status}
-            onChange={(e) => setStatus(e.target.value as TLead["status"])}
-          >
-            {Object.entries(STATUS_LABELS).map(([val, label]) => (
-              <option key={val} value={val}>{label}</option>
-            ))}
-          </select>
-          <Button onClick={onCreateLead} disabled={createLead.isPending || !title.trim()}>
-            {createLead.isPending ? "Saving..." : "Add Lead"}
-          </Button>
+    <div>
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Leads</h1>
+          <p className="page-subtitle">Manage your sales pipeline</p>
         </div>
-        {createLead.isError && (
-          <p className="mt-2 text-sm text-red-600">{(createLead.error as Error).message}</p>
-        )}
-      </Card>
+        <button className="btn btn-primary" onClick={() => setShowCreate(!showCreate)}>
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+          New Lead
+        </button>
+      </div>
 
-      {/* Leads table */}
-      <Card>
-        {isLoading && <p className="text-sm text-slate-500">Loading leads...</p>}
-        {isError && <p className="text-sm text-red-600">Failed to load leads: {(error as Error).message}</p>}
+      {/* Pipeline stats */}
+      <div className="stats-row">
+        {(Object.entries(STATUS_LABEL) as [TLead["status"], string][]).map(([s, label]) => (
+          <div
+            key={s}
+            className="stat-card"
+            style={{ cursor: "pointer", outline: filterStatus === s ? "2px solid #6366f1" : "none" }}
+            onClick={() => setFilterStatus(filterStatus === s ? "" : s)}
+          >
+            <div className="stat-label">{label}</div>
+            <div className="stat-value" style={{ fontSize: 24 }}>{counts[s] ?? 0}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Create form */}
+      {showCreate && (
+        <div className="panel" style={{ marginBottom: 20 }}>
+          <div className="panel-header">
+            <span className="panel-title">Add New Lead</span>
+            <button className="btn btn-ghost btn-sm" onClick={() => setShowCreate(false)}>✕</button>
+          </div>
+          <div className="panel-body" style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+            <input className="form-input" style={{ flex: "1 1 200px" }} placeholder="Lead title *" value={title} onChange={(e) => setTitle(e.target.value)} />
+            <input className="form-input" style={{ flex: "2 1 280px" }} placeholder="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} />
+            <select className="crm-input" value={status} onChange={(e) => setStatus(e.target.value as TLead["status"])}>
+              {(Object.entries(STATUS_LABEL) as [TLead["status"], string][]).map(([v, l]) => (
+                <option key={v} value={v}>{l}</option>
+              ))}
+            </select>
+            <button className="btn btn-primary" onClick={onCreateLead} disabled={createLead.isPending || !title.trim()}>
+              {createLead.isPending ? "Saving..." : "Add Lead"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Table */}
+      <div className="panel">
+        <div className="toolbar">
+          <span style={{ fontSize: 13, color: "#6b7280" }}>
+            {filtered.length} lead{filtered.length !== 1 ? "s" : ""}
+            {filterStatus ? ` · ${STATUS_LABEL[filterStatus]}` : ""}
+          </span>
+          {filterStatus && (
+            <button className="btn btn-ghost btn-sm" onClick={() => setFilterStatus("")}>Clear filter ✕</button>
+          )}
+        </div>
+
+        {isLoading && <div className="empty-state"><div className="empty-state-icon">⏳</div><p className="empty-state-text">Loading leads...</p></div>}
+        {isError && <div className="empty-state"><div className="empty-state-icon">⚠️</div><p className="empty-state-text">Failed to load leads</p></div>}
+
         {!isLoading && !isError && (
-          <>
-            <p className="mb-2 text-sm text-slate-500">Total: {data?.total ?? 0}</p>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableHeaderCell>Title</TableHeaderCell>
-                  <TableHeaderCell>Description</TableHeaderCell>
-                  <TableHeaderCell>Status</TableHeaderCell>
-                  <TableHeaderCell>Created</TableHeaderCell>
-                  <TableHeaderCell>Actions</TableHeaderCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {(data?.items ?? []).map((lead) => (
-                  <TableRow key={lead.id}>
-                    {editState?.id === lead.id ? (
-                      <>
-                        <TableCell>
-                          <Input
-                            value={editState.title}
-                            onChange={(e) => setEditState({ ...editState, title: e.target.value })}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            value={editState.description}
-                            onChange={(e) => setEditState({ ...editState, description: e.target.value })}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <select
-                            className="crm-input"
-                            value={editState.status}
-                            onChange={(e) => setEditState({ ...editState, status: e.target.value as TLead["status"] })}
-                          >
-                            {Object.entries(STATUS_LABELS).map(([val, label]) => (
-                              <option key={val} value={val}>{label}</option>
-                            ))}
-                          </select>
-                        </TableCell>
-                        <TableCell>{new Date(lead.createdAt).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button variant="default" onClick={onSaveEdit} disabled={updateLead.isPending}>
-                              {updateLead.isPending ? "Saving..." : "Save"}
-                            </Button>
-                            <Button variant="secondary" onClick={() => setEditState(null)}>
-                              Cancel
-                            </Button>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Description</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((lead) => (
+                <tr key={lead.id} className={editState?.id === lead.id ? "inline-edit-row" : ""}>
+                  {editState?.id === lead.id ? (
+                    <>
+                      <td><input className="form-input" value={editState.title} onChange={(e) => setEditState({ ...editState, title: e.target.value })} /></td>
+                      <td><input className="form-input" value={editState.description} onChange={(e) => setEditState({ ...editState, description: e.target.value })} /></td>
+                      <td>
+                        <select className="crm-input" value={editState.status} onChange={(e) => setEditState({ ...editState, status: e.target.value as TLead["status"] })}>
+                          {(Object.entries(STATUS_LABEL) as [TLead["status"], string][]).map(([v, l]) => (
+                            <option key={v} value={v}>{l}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>{new Date(lead.createdAt).toLocaleDateString()}</td>
+                      <td>
+                        <div className="action-group">
+                          <button className="btn btn-primary btn-sm" onClick={onSaveEdit} disabled={updateLead.isPending}>{updateLead.isPending ? "..." : "Save"}</button>
+                          <button className="btn btn-secondary btn-sm" onClick={() => setEditState(null)}>Cancel</button>
+                        </div>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td style={{ fontWeight: 500, color: "#1a1f36" }}>{lead.title}</td>
+                      <td style={{ color: "#6b7280", maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{lead.description ?? "—"}</td>
+                      <td><span className={STATUS_BADGE[lead.status]}>{STATUS_LABEL[lead.status]}</span></td>
+                      <td style={{ color: "#6b7280" }}>{new Date(lead.createdAt).toLocaleDateString()}</td>
+                      <td>
+                        {deleteConfirmId === lead.id ? (
+                          <div className="action-group">
+                            <button className="btn btn-danger btn-sm" onClick={async () => { await deleteLead.mutateAsync(lead.id); setDeleteConfirmId(null); }} disabled={deleteLead.isPending}>{deleteLead.isPending ? "..." : "Confirm"}</button>
+                            <button className="btn btn-secondary btn-sm" onClick={() => setDeleteConfirmId(null)}>Cancel</button>
                           </div>
-                        </TableCell>
-                      </>
-                    ) : (
-                      <>
-                        <TableCell className="font-medium text-slate-900">{lead.title}</TableCell>
-                        <TableCell>{lead.description ?? "—"}</TableCell>
-                        <TableCell>
-                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[lead.status]}`}>
-                            {STATUS_LABELS[lead.status]}
-                          </span>
-                        </TableCell>
-                        <TableCell>{new Date(lead.createdAt).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          {deleteConfirmId === lead.id ? (
-                            <div className="flex gap-2">
-                              <Button
-                                variant="destructive"
-                                onClick={() => onDelete(lead.id)}
-                                disabled={deleteLead.isPending}
-                              >
-                                {deleteLead.isPending ? "Deleting..." : "Confirm"}
-                              </Button>
-                              <Button variant="secondary" onClick={() => setDeleteConfirmId(null)}>
-                                Cancel
-                              </Button>
-                            </div>
-                          ) : (
-                            <div className="flex gap-2">
-                              <Button
-                                variant="secondary"
-                                onClick={() =>
-                                  setEditState({
-                                    id: lead.id,
-                                    title: lead.title,
-                                    description: lead.description ?? "",
-                                    status: lead.status,
-                                  })
-                                }
-                              >
-                                Edit
-                              </Button>
-                              <Button variant="destructive" onClick={() => setDeleteConfirmId(lead.id)}>
-                                Delete
-                              </Button>
-                            </div>
-                          )}
-                        </TableCell>
-                      </>
-                    )}
-                  </TableRow>
-                ))}
-                {(data?.items ?? []).length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="py-6 text-center text-slate-400">
-                      No leads yet. Add your first lead above.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </>
+                        ) : (
+                          <div className="action-group">
+                            <button className="btn btn-secondary btn-sm" onClick={() => setEditState({ id: lead.id, title: lead.title, description: lead.description ?? "", status: lead.status })}>Edit</button>
+                            <button className="btn btn-danger btn-sm" onClick={() => setDeleteConfirmId(lead.id)}>Delete</button>
+                          </div>
+                        )}
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))}
+              {filtered.length === 0 && (
+                <tr><td colSpan={5}>
+                  <div className="empty-state">
+                    <div className="empty-state-icon">🎯</div>
+                    <p className="empty-state-text">No leads found</p>
+                    <p className="empty-state-sub">Click "New Lead" to add your first lead</p>
+                  </div>
+                </td></tr>
+              )}
+            </tbody>
+          </table>
         )}
-      </Card>
-    </section>
+      </div>
+    </div>
   );
 }

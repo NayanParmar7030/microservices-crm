@@ -6,16 +6,6 @@ import {
   useNotificationsStream,
   useUnreadNotifications,
 } from "../api/notifications.api";
-import { Button } from "../components/ui/Button";
-import { Card } from "../components/ui/Card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeaderCell,
-  TableRow,
-} from "../components/ui/Table";
 
 export function NotificationsPage() {
   const [unreadOnly, setUnreadOnly] = useState(false);
@@ -26,85 +16,100 @@ export function NotificationsPage() {
   const markRead = useMarkNotificationRead();
 
   return (
-    <section className="grid gap-4">
-      <Card>
-        <h2 className="text-xl font-semibold text-slate-900">Notifications</h2>
-        <p className="text-sm text-slate-500">
-          SSE stream with polling fallback enabled. Unread count: {unread.data ?? 0}
-        </p>
-        <div className="mt-3 flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-2 text-sm text-slate-600">
+    <div>
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Notifications</h1>
+          <p className="page-subtitle">Stay updated with your team activity</p>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {(unread.data ?? 0) > 0 && (
+            <span className="badge badge-indigo">{unread.data} unread</span>
+          )}
+          <button className="btn btn-secondary" onClick={() => markAllRead.mutate()} disabled={markAllRead.isPending}>
+            {markAllRead.isPending ? "Updating..." : "Mark all read"}
+          </button>
+        </div>
+      </div>
+
+      {/* Filter */}
+      <div className="panel">
+        <div className="toolbar">
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: "#374151", cursor: "pointer" }}>
             <input
               type="checkbox"
               checked={unreadOnly}
-              onChange={(event) => setUnreadOnly(event.target.checked)}
+              onChange={(e) => setUnreadOnly(e.target.checked)}
+              style={{ width: 15, height: 15, accentColor: "#6366f1" }}
             />
-            unread only
+            Show unread only
           </label>
-          <Button type="button" onClick={() => markAllRead.mutate()} disabled={markAllRead.isPending}>
-            {markAllRead.isPending ? "Updating..." : "Mark all as read"}
-          </Button>
+          <span style={{ marginLeft: "auto", fontSize: 13, color: "#9ca3af" }}>
+            {notifications.data?.total ?? 0} total
+          </span>
         </div>
-      </Card>
 
-      <Card>
-        {notifications.isLoading && <p>Loading notifications...</p>}
+        {notifications.isLoading && (
+          <div className="empty-state"><div className="empty-state-icon">⏳</div><p className="empty-state-text">Loading notifications...</p></div>
+        )}
         {notifications.isError && (
-          <p className="text-sm text-red-600">
-            Failed to load notifications: {(notifications.error as Error).message}
-          </p>
+          <div className="empty-state"><div className="empty-state-icon">⚠️</div><p className="empty-state-text">Failed to load notifications</p></div>
         )}
+
         {!notifications.isLoading && !notifications.isError && (
-          <>
-            <p className="mb-2 text-sm text-slate-500">Total: {notifications.data?.total ?? 0}</p>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableHeaderCell>Type</TableHeaderCell>
-                  <TableHeaderCell>Title</TableHeaderCell>
-                  <TableHeaderCell>Message</TableHeaderCell>
-                  <TableHeaderCell>Status</TableHeaderCell>
-                  <TableHeaderCell>Created</TableHeaderCell>
-                  <TableHeaderCell>Actions</TableHeaderCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {(notifications.data?.items ?? []).map((notification) => (
-                  <TableRow key={notification.id} className={notification.isRead ? "" : "bg-indigo-50"}>
-                    <TableCell>{notification.type}</TableCell>
-                    <TableCell className="font-medium text-slate-900">{notification.title}</TableCell>
-                    <TableCell>{notification.message}</TableCell>
-                    <TableCell>
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${notification.isRead ? "bg-slate-100 text-slate-500" : "bg-indigo-100 text-indigo-700"}`}>
-                        {notification.isRead ? "Read" : "Unread"}
-                      </span>
-                    </TableCell>
-                    <TableCell>{new Date(notification.createdAt).toLocaleString()}</TableCell>
-                    <TableCell>
-                      {!notification.isRead && (
-                        <Button
-                          variant="ghost"
-                          onClick={() => markRead.mutate(notification.id)}
-                          disabled={markRead.isPending}
-                        >
-                          Mark read
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {(notifications.data?.items ?? []).length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="py-6 text-center text-slate-400">
-                      No notifications yet.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th style={{ width: 8 }}></th>
+                <th>Type</th>
+                <th>Title</th>
+                <th>Message</th>
+                <th>Status</th>
+                <th>Time</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(notifications.data?.items ?? []).map((n) => (
+                <tr key={n.id} style={{ background: n.isRead ? undefined : "#fafbff" }}>
+                  <td style={{ padding: "13px 8px 13px 16px" }}>
+                    {!n.isRead && <div className="notif-dot" />}
+                  </td>
+                  <td>
+                    <span className="badge badge-gray" style={{ fontSize: 11 }}>{n.type}</span>
+                  </td>
+                  <td style={{ fontWeight: n.isRead ? 400 : 600, color: "#1a1f36" }}>{n.title}</td>
+                  <td style={{ color: "#6b7280", maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.message}</td>
+                  <td>
+                    <span className={n.isRead ? "badge badge-gray" : "badge badge-indigo"}>
+                      {n.isRead ? "Read" : "Unread"}
+                    </span>
+                  </td>
+                  <td style={{ color: "#9ca3af", fontSize: 12.5, whiteSpace: "nowrap" }}>
+                    {new Date(n.createdAt).toLocaleString()}
+                  </td>
+                  <td>
+                    {!n.isRead && (
+                      <button className="btn btn-ghost btn-sm" onClick={() => markRead.mutate(n.id)} disabled={markRead.isPending}>
+                        Mark read
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {(notifications.data?.items ?? []).length === 0 && (
+                <tr><td colSpan={7}>
+                  <div className="empty-state">
+                    <div className="empty-state-icon">🔔</div>
+                    <p className="empty-state-text">No notifications</p>
+                    <p className="empty-state-sub">You're all caught up!</p>
+                  </div>
+                </td></tr>
+              )}
+            </tbody>
+          </table>
         )}
-      </Card>
-    </section>
+      </div>
+    </div>
   );
 }
