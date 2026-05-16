@@ -18,6 +18,8 @@ type TCreateTaskInput = {
   dueAt?: string | null;
 };
 
+type TUpdateTaskInput = Partial<TCreateTaskInput>;
+
 export function useTasks(params: TTaskQuery) {
   const tenantId = useAuthStore((state) => state.tenantId);
   return useQuery({
@@ -37,6 +39,33 @@ export function useCreateTask() {
     mutationFn: async (payload: TCreateTaskInput) => {
       const response = await api.post<TApiSuccess<TTask>>("/crm/tasks", payload);
       return response.data.data;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["tasks", tenantId] });
+    },
+  });
+}
+
+export function useUpdateTask() {
+  const tenantId = useAuthStore((state) => state.tenantId);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: TUpdateTaskInput & { id: string }) => {
+      const response = await api.patch<TApiSuccess<TTask>>(`/crm/tasks/${id}`, payload);
+      return response.data.data;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["tasks", tenantId] });
+    },
+  });
+}
+
+export function useDeleteTask() {
+  const tenantId = useAuthStore((state) => state.tenantId);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/crm/tasks/${id}`);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["tasks", tenantId] });

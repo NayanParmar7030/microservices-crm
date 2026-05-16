@@ -44,6 +44,11 @@ const SettingsUsersPage = lazy(async () => {
   return { default: module.SettingsUsersPage };
 });
 
+const LeadsPage = lazy(async () => {
+  const module = await import("./pages/LeadsPage");
+  return { default: module.LeadsPage };
+});
+
 function PageSkeleton() {
   return <p className="text-sm text-slate-500">Loading page...</p>;
 }
@@ -73,6 +78,16 @@ function SettingsUsersRouteComponent() {
     <ProtectedRoute roles={["admin"]}>
       <Suspense fallback={<PageSkeleton />}>
         <SettingsUsersPage />
+      </Suspense>
+    </ProtectedRoute>
+  );
+}
+
+function LeadsRouteComponent() {
+  return (
+    <ProtectedRoute>
+      <Suspense fallback={<PageSkeleton />}>
+        <LeadsPage />
       </Suspense>
     </ProtectedRoute>
   );
@@ -158,6 +173,12 @@ function AppLayout() {
           </Link>
           <Link
             className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm hover:bg-slate-50"
+            to="/leads"
+          >
+            Leads
+          </Link>
+          <Link
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm hover:bg-slate-50"
             to="/notifications"
           >
             Notifications
@@ -223,9 +244,16 @@ const settingsUsersRoute = createRoute({
   component: SettingsUsersRouteComponent,
 });
 
+const leadsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/leads",
+  component: LeadsRouteComponent,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   tasksRoute,
+  leadsRoute,
   notificationsRoute,
   loginRoute,
   registerRoute,

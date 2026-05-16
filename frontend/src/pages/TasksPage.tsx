@@ -3,7 +3,7 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import timeGridPlugin from "@fullcalendar/timegrid";
-import { useCreateTask, useTasks } from "../api/crm.api";
+import { useCreateTask, useDeleteTask, useTasks, useUpdateTask } from "../api/crm.api";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
@@ -17,12 +17,22 @@ import {
 } from "../components/ui/Table";
 import type { TTask } from "../types/api";
 
+type TEditState = {
+  id: string;
+  title: string;
+  description: string;
+  status: TTask["status"];
+  priority: TTask["priority"];
+} | null;
+
 export function TasksPage() {
   const [status, setStatus] = useState<TTask["status"] | "">("");
   const [priority, setPriority] = useState<TTask["priority"] | "">("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [viewMode, setViewMode] = useState<"table" | "calendar">("table");
+  const [editState, setEditState] = useState<TEditState>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const queryParams = useMemo(
     () => ({
@@ -36,6 +46,9 @@ export function TasksPage() {
 
   const { data, isLoading, isError, error } = useTasks(queryParams);
   const createTask = useCreateTask();
+  const updateTask = useUpdateTask();
+  const deleteTask = useDeleteTask();
+
   const taskEvents = useMemo(
     () =>
       (data?.items ?? [])
@@ -50,9 +63,7 @@ export function TasksPage() {
   );
 
   async function onCreateTask() {
-    if (!title.trim()) {
-      return;
-    }
+    if (!title.trim()) return;
     await createTask.mutateAsync({
       title,
       description: description.trim() || undefined,
@@ -61,6 +72,23 @@ export function TasksPage() {
     });
     setTitle("");
     setDescription("");
+  }
+
+  async function onSaveEdit() {
+    if (!editState || !editState.title.trim()) return;
+    await updateTask.mutateAsync({
+      id: editState.id,
+      title: editState.title.trim(),
+      description: editState.description.trim() || undefined,
+      status: editState.status,
+      priority: editState.priority,
+    });
+    setEditState(null);
+  }
+
+  async function onDelete(id: string) {
+    await deleteTask.mutateAsync(id);
+    setDeleteConfirmId(null);
   }
 
   return (
@@ -140,17 +168,108 @@ export function TasksPage() {
                   <TableHeaderCell>Status</TableHeaderCell>
                   <TableHeaderCell>Priority</TableHeaderCell>
                   <TableHeaderCell>Due</TableHeaderCell>
+                  <TableHeaderCell>Actions</TableHeaderCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {(data?.items ?? []).map((task) => (
                   <TableRow key={task.id}>
-                    <TableCell>{task.title}</TableCell>
-                    <TableCell>{task.status}</TableCell>
-                    <TableCell>{task.priority}</TableCell>
-                    <TableCell>{task.dueAt ? new Date(task.dueAt).toLocaleString() : "—"}</TableCell>
+                    {editState?.id === task.id ? (
+                      <>
+                        <TableCell>
+                          <Input
+                            value={editState.title}
+                            onChange={(e) => setEditState({ ...editState, title: e.target.value })}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <select
+                            className="crm-input"
+                            value={editState.status}
+                            onChange={(e) => setEditState({ ...editState, status: e.target.value as TTask["status"] })}
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="in_progress">In progress</option>
+                            <option value="completed">Completed</option>
+                          </select>
+                        </TableCell>
+                        <TableCell>
+                          <select
+                            className="crm-input"
+                            value={editState.priority}
+                            onChange={(e) => setEditState({ ...editState, priority: e.target.value as TTask["priority"] })}
+                          >
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                          </select>
+                        </TableCell>
+                        <TableCell>—</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button variant="default" onClick={onSaveEdit} disabled={updateTask.isPending}>
+                              {updateTask.isPending ? "Saving..." : "Save"}
+                            </Button>
+                            <Button variant="secondary" onClick={() => setEditState(null)}>
+                              Cancel
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </>
+                    ) : (
+                      <>
+                        <TableCell className="font-medium text-slate-900">{task.title}</TableCell>
+                        <TableCell>{task.status}</TableCell>
+                        <TableCell>{task.priority}</TableCell>
+                        <TableCell>{task.dueAt ? new Date(task.dueAt).toLocaleString() : "—"}</TableCell>
+                        <TableCell>
+                          {deleteConfirmId === task.id ? (
+                            <div className="flex gap-2">
+                              <Button
+                                variant="destructive"
+                                onClick={() => onDelete(task.id)}
+                                disabled={deleteTask.isPending}
+                              >
+                                {deleteTask.isPending ? "Deleting..." : "Confirm"}
+                              </Button>
+                              <Button variant="secondary" onClick={() => setDeleteConfirmId(null)}>
+                                Cancel
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex gap-2">
+                              <Button
+                                variant="secondary"
+                                onClick={() =>
+                                  setEditState({
+                                    id: task.id,
+                                    title: task.title,
+                                    description: task.description ?? "",
+                                    status: task.status,
+                                    priority: task.priority,
+                                  })
+                                }
+                              >
+                                Edit
+                              </Button>
+                              <Button variant="destructive" onClick={() => setDeleteConfirmId(task.id)}>
+                                Delete
+                              </Button>
+                            </div>
+                          )}
+                        </TableCell>
+                      </>
+                    )}
                   </TableRow>
                 ))}
+                {(data?.items ?? []).length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="py-6 text-center text-slate-400">
+                      No tasks yet. Add your first task above.
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </>
@@ -172,3 +291,4 @@ export function TasksPage() {
     </section>
   );
 }
+

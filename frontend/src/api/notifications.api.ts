@@ -46,6 +46,20 @@ export function useUnreadNotifications() {
   });
 }
 
+export function useMarkNotificationRead() {
+  const tenantId = useAuthStore((state) => state.tenantId);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.patch(`/notifications/${id}/read`);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["notifications", tenantId] });
+      await queryClient.invalidateQueries({ queryKey: ["notifications", "unread", tenantId] });
+    },
+  });
+}
+
 export function useMarkAllNotificationsRead() {
   const tenantId = useAuthStore((state) => state.tenantId);
   const queryClient = useQueryClient();

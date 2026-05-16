@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   useMarkAllNotificationsRead,
+  useMarkNotificationRead,
   useNotifications,
   useNotificationsStream,
   useUnreadNotifications,
@@ -22,6 +23,7 @@ export function NotificationsPage() {
   const notifications = useNotifications({ page: 1, limit: 25, unreadOnly });
   const unread = useUnreadNotifications();
   const markAllRead = useMarkAllNotificationsRead();
+  const markRead = useMarkNotificationRead();
 
   return (
     <section className="grid gap-4">
@@ -63,18 +65,41 @@ export function NotificationsPage() {
                   <TableHeaderCell>Message</TableHeaderCell>
                   <TableHeaderCell>Status</TableHeaderCell>
                   <TableHeaderCell>Created</TableHeaderCell>
+                  <TableHeaderCell>Actions</TableHeaderCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {(notifications.data?.items ?? []).map((notification) => (
-                  <TableRow key={notification.id}>
+                  <TableRow key={notification.id} className={notification.isRead ? "" : "bg-indigo-50"}>
                     <TableCell>{notification.type}</TableCell>
-                    <TableCell>{notification.title}</TableCell>
+                    <TableCell className="font-medium text-slate-900">{notification.title}</TableCell>
                     <TableCell>{notification.message}</TableCell>
-                    <TableCell>{notification.isRead ? "Read" : "Unread"}</TableCell>
+                    <TableCell>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${notification.isRead ? "bg-slate-100 text-slate-500" : "bg-indigo-100 text-indigo-700"}`}>
+                        {notification.isRead ? "Read" : "Unread"}
+                      </span>
+                    </TableCell>
                     <TableCell>{new Date(notification.createdAt).toLocaleString()}</TableCell>
+                    <TableCell>
+                      {!notification.isRead && (
+                        <Button
+                          variant="ghost"
+                          onClick={() => markRead.mutate(notification.id)}
+                          disabled={markRead.isPending}
+                        >
+                          Mark read
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
+                {(notifications.data?.items ?? []).length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-6 text-center text-slate-400">
+                      No notifications yet.
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </>
