@@ -1,0 +1,565 @@
+{
+  "info": {
+    "name": "CRM Microservices",
+    "description": "Complete API collection for the CRM Microservices platform.\n\nBase URL: http://localhost:3000\n\n**Quick Start:**\n1. Run the Register request to create an account — accessToken, userId, tenantId are saved automatically.\n2. All subsequent requests use {{accessToken}} in the Authorization header.\n3. Use the Collection Variables tab to inspect/override saved values.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",        "value": "http://localhost:3000", "type": "string" },
+    { "key": "accessToken",    "value": "", "type": "string" },
+    { "key": "userId",         "value": "", "type": "string" },
+    { "key": "tenantId",       "value": "", "type": "string" },
+    { "key": "tenantSlug",     "value": "", "type": "string" },
+    { "key": "leadId",         "value": "", "type": "string" },
+    { "key": "taskId",         "value": "", "type": "string" },
+    { "key": "notificationId", "value": "", "type": "string" },
+    { "key": "internalSecret", "value": "super-secret-internal-key", "type": "string" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "🔐 Auth",
+      "description": "Authentication endpoints — register, login, token refresh, logout.",
+      "item": [
+        {
+          "name": "Register (creates tenant + admin user)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data) {",
+                  "  const d = res.data;",
+                  "  if (d.accessToken)  pm.collectionVariables.set('accessToken', d.accessToken);",
+                  "  if (d.user?.id)     pm.collectionVariables.set('userId',      d.user.id);",
+                  "  if (d.tenant?.id)   pm.collectionVariables.set('tenantId',    d.tenant.id);",
+                  "  if (d.tenant?.slug) pm.collectionVariables.set('tenantSlug',  d.tenant.slug);",
+                  "  console.log('✅ Registered. accessToken, userId, tenantId saved.');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@acme.com\",\n  \"password\": \"Admin1234!\",\n  \"organizationName\": \"Acme Corp\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/register", "host": ["{{baseUrl}}"], "path": ["api","v1","auth","register"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data) {",
+                  "  const d = res.data;",
+                  "  if (d.accessToken)  pm.collectionVariables.set('accessToken', d.accessToken);",
+                  "  if (d.user?.id)     pm.collectionVariables.set('userId',      d.user.id);",
+                  "  if (d.tenant?.id)   pm.collectionVariables.set('tenantId',    d.tenant.id);",
+                  "  if (d.tenant?.slug) pm.collectionVariables.set('tenantSlug',  d.tenant.slug);",
+                  "  console.log('✅ Logged in. accessToken, userId, tenantId saved.');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@acme.com\",\n  \"password\": \"Admin1234!\",\n  \"tenantSlug\": \"{{tenantSlug}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/login", "host": ["{{baseUrl}}"], "path": ["api","v1","auth","login"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data?.accessToken) {",
+                  "  pm.collectionVariables.set('accessToken', res.data.accessToken);",
+                  "  console.log('✅ accessToken refreshed.');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "description": "Refresh token is read from the httpOnly cookie automatically. Leave body empty — the cookie is sent by the browser/Postman cookie jar.",
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/refresh", "host": ["{{baseUrl}}"], "path": ["api","v1","auth","refresh"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('accessToken', '');",
+                  "console.log('✅ Logged out. accessToken cleared.');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "description": "Clears the refresh token cookie. Leave body empty.",
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/logout", "host": ["{{baseUrl}}"], "path": ["api","v1","auth","logout"] }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "👥 Users",
+      "description": "User management. List/get requires admin or manager role. Assign role and delete require admin role.",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","users"],
+              "query": [
+                { "key": "page",  "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","users","{{userId}}"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Update User (name / email)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Smith\",\n  \"email\": \"jane.smith@acme.com\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","users","{{userId}}"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Assign Role (admin only)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"manager\"\n}"
+            },
+            "description": "Valid roles: admin | manager | user",
+            "url": { "raw": "{{baseUrl}}/api/v1/users/{{userId}}/role", "host": ["{{baseUrl}}"], "path": ["api","v1","users","{{userId}}","role"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete User (admin only)",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","users","{{userId}}"] }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📋 CRM — Leads",
+      "description": "Lead pipeline management. All routes require a valid access token.",
+      "item": [
+        {
+          "name": "List Leads",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/crm/leads?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","crm","leads"],
+              "query": [
+                { "key": "page",  "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Lead",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data?.id) {",
+                  "  pm.collectionVariables.set('leadId', res.data.id);",
+                  "  console.log('✅ leadId saved:', res.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Acme Deal\",\n  \"description\": \"Potential enterprise customer\",\n  \"status\": \"new\",\n  \"assignedToUserId\": null\n}"
+            },
+            "description": "status: new | contacted | qualified | won | lost",
+            "url": { "raw": "{{baseUrl}}/api/v1/crm/leads", "host": ["{{baseUrl}}"], "path": ["api","v1","crm","leads"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Lead by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/crm/leads/{{leadId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","crm","leads","{{leadId}}"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Lead",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Acme Deal — Updated\",\n  \"status\": \"contacted\",\n  \"assignedToUserId\": \"{{userId}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/crm/leads/{{leadId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","crm","leads","{{leadId}}"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Lead",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/crm/leads/{{leadId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","crm","leads","{{leadId}}"] }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "✅ CRM — Tasks",
+      "description": "Task management with status and priority filters.",
+      "item": [
+        {
+          "name": "List Tasks",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/crm/tasks?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","crm","tasks"],
+              "query": [
+                { "key": "page",     "value": "1" },
+                { "key": "limit",    "value": "20" },
+                { "key": "status",   "value": "",   "disabled": true, "description": "pending | in_progress | completed" },
+                { "key": "priority", "value": "",   "disabled": true, "description": "low | medium | high | urgent" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Tasks — Filter by Status",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/crm/tasks?status=pending&priority=high",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","crm","tasks"],
+              "query": [
+                { "key": "status",   "value": "pending" },
+                { "key": "priority", "value": "high" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data?.id) {",
+                  "  pm.collectionVariables.set('taskId', res.data.id);",
+                  "  console.log('✅ taskId saved:', res.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Follow up with Acme\",\n  \"description\": \"Send proposal document\",\n  \"status\": \"pending\",\n  \"priority\": \"high\",\n  \"dueAt\": \"2026-06-01T09:00:00.000Z\",\n  \"assignedToUserId\": null\n}"
+            },
+            "description": "status: pending | in_progress | completed\npriority: low | medium | high | urgent\ndueAt: ISO 8601 datetime string or null",
+            "url": { "raw": "{{baseUrl}}/api/v1/crm/tasks", "host": ["{{baseUrl}}"], "path": ["api","v1","crm","tasks"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Task by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/crm/tasks/{{taskId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","crm","tasks","{{taskId}}"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Task",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"in_progress\",\n  \"priority\": \"urgent\",\n  \"assignedToUserId\": \"{{userId}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/crm/tasks/{{taskId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","crm","tasks","{{taskId}}"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Task",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/crm/tasks/{{taskId}}", "host": ["{{baseUrl}}"], "path": ["api","v1","crm","tasks","{{taskId}}"] }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🔔 Notifications",
+      "description": "Notification inbox — list, unread count, mark read, SSE stream.",
+      "item": [
+        {
+          "name": "List Notifications",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications?page=1&limit=25",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","notifications"],
+              "query": [
+                { "key": "page",       "value": "1" },
+                { "key": "limit",      "value": "25" },
+                { "key": "unreadOnly", "value": "true", "disabled": true, "description": "true | false" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Unread Notifications Only",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications?unreadOnly=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","notifications"],
+              "query": [{ "key": "unreadOnly", "value": "true" }]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Unread Count",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/notifications/unread", "host": ["{{baseUrl}}"], "path": ["api","v1","notifications","unread"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Notification as Read",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Set notificationId manually or run List Notifications first and copy an id",
+                  "// pm.collectionVariables.set('notificationId', 'paste-uuid-here');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/api/v1/notifications/{{notificationId}}/read", "host": ["{{baseUrl}}"], "path": ["api","v1","notifications","{{notificationId}}","read"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Mark All Notifications as Read",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/api/v1/notifications/read-all", "host": ["{{baseUrl}}"], "path": ["api","v1","notifications","read-all"] }
+          },
+          "response": []
+        },
+        {
+          "name": "SSE Stream (real-time events)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "text/event-stream" }],
+            "description": "Server-Sent Events stream. Keep this request open to receive real-time notifications.\n\nNote: Postman shows the raw SSE data in the response body as events arrive. Each event looks like:\n\n```\ndata: {\"id\":\"...\",\"type\":\"task_assigned\",\"title\":\"...\",\"message\":\"...\"}\n```",
+            "url": { "raw": "{{baseUrl}}/api/v1/notifications/stream", "host": ["{{baseUrl}}"], "path": ["api","v1","notifications","stream"] }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "⚙️ Internal (Service-to-Service)",
+      "description": "Internal routes called by other services, not the frontend. Protected by x-internal-secret header.",
+      "item": [
+        {
+          "name": "Create Notification (internal)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data?.id) {",
+                  "  pm.collectionVariables.set('notificationId', res.data.id);",
+                  "  console.log('✅ notificationId saved:', res.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",      "value": "application/json" },
+              { "key": "x-internal-secret", "value": "{{internalSecret}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"userId\": \"{{userId}}\",\n  \"type\": \"task_assigned\",\n  \"title\": \"New task assigned\",\n  \"message\": \"You have been assigned a new task: Follow up with Acme\",\n  \"metadata\": {\n    \"taskId\": \"{{taskId}}\"\n  }\n}"
+            },
+            "description": "Called internally by CRM service when a task/lead is assigned. Requires x-internal-secret header matching INTERNAL_SECRET env var.",
+            "url": { "raw": "{{baseUrl}}/api/v1/notifications/internal", "host": ["{{baseUrl}}"], "path": ["api","v1","notifications","internal"] }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🏥 Health Checks",
+      "description": "Liveness checks for each service.",
+      "item": [
+        {
+          "name": "API Gateway Health",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Auth Service (direct)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": { "raw": "http://localhost:3001/health", "raw": "http://localhost:3001/health" }
+          },
+          "response": []
+        },
+        {
+          "name": "User Service (direct)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": { "raw": "http://localhost:3002/health", "raw": "http://localhost:3002/health" }
+          },
+          "response": []
+        },
+        {
+          "name": "CRM Service (direct)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": { "raw": "http://localhost:3003/health", "raw": "http://localhost:3003/health" }
+          },
+          "response": []
+        },
+        {
+          "name": "Notification Service (direct)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": { "raw": "http://localhost:3004/health", "raw": "http://localhost:3004/health" }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
